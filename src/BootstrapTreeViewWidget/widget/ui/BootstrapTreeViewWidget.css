@@ -1,0 +1,31 @@
+
+ul.TreeViewWidget {
+    list-style-type: none;	
+    padding: 0px;
+    margin: 0px;
+}
+
+ul.TreeViewWidget .treeview-expandable {
+    background-repeat: no-repeat;
+    background-position: 0px 2px;
+    padding-left: 14px;
+}
+
+ul.TreeViewWidget .treeview-expandable.treeview-expanded {
+    background-image: url(BootstrapTreeViewWidget/widget/ui/images/collapse-small-blue.png);
+}
+
+ul.TreeViewWidget .treeview-expandable.treeview-collapsed {
+    background-image: url(BootstrapTreeViewWidget/widget/ui/images/expand-small-blue.png);
+}
+
+ul.TreeViewWidget .treeview-leaf {
+    padding-left: 14px;
+}
+
+ul.TreeViewWidget li {
+    padding-top: 2px;
+}
+
+ul.TreeViewWidget li span {
+}

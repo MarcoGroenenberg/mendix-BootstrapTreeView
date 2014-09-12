@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<widget id="BootstrapTreeViewWidget.widget.BootstrapTreeViewWidget" needsEntityContext="true" xmlns="http://www.mendix.com/widget/1.0/">
+  <name>BootstrapTreeViewWidget</name>
+  <description>Mendix Tree view widget</description>
+
+  <icon>R0lGODlhEAAQAJEAAMDAwNjW1v///1BQUCH5BAEAAAAALAAAAAAQABAAAAImhI+Jw6w5hBxvSUGraU6f7H3hAnUlNwQguZjsCKyh3Dwoo8I1jBQAOw==</icon>
+
+  <properties>
+        <property key="baseClass" type="string" required="true" defaultValue="TreeViewWidget">
+            <caption>CSS class</caption>
+            <category>Appearance</category>
+            <description>The base CSS class.</description>
+        </property>
+        <property key="dataEntity" type="entity" required="true" defaultValue="" isDefault="false" allowNonPersistableEntities="true" >
+            <caption>Data entity</caption>
+            <category>Configuration</category>
+            <description>The entity returned by the get data microflow</description>
+        </property>
+        <property key="getDataMicroflow" type="microflow" required="true" defaultValue="">
+            <caption>Get data microflow</caption>
+            <category>Configuration</category>
+            <description>This microflow is called to get the data</description>
+            <returnType type="Object" isList="true" entityProperty="dataEntity"></returnType>
+        </property>
+	</properties>
+</widget>
+
