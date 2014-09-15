@@ -151,6 +151,9 @@ dojo.declare('BootstrapTreeViewWidget.widget.BootstrapTreeViewWidget', [ mxui.wi
 	 */
     _loadData : function () {
         'use strict';
+        var
+            selectedId;
+
         switch (this._contextObj.get(this.actionAttr)) {
         case this.ACTION_REFRESH:
         case this.ACTION_UPDATE:
@@ -169,6 +172,9 @@ dojo.declare('BootstrapTreeViewWidget.widget.BootstrapTreeViewWidget', [ mxui.wi
             break;
 
         case this.ACTION_SET_SELECTION:
+            selectedId = 'span' + this._contextObj.getReference(this.selectionReference.substr(0, this.selectionReference.indexOf('/')));
+            this._setSelection(selectedId);
+            this._resetAction();
 
             break;
 
@@ -179,6 +185,9 @@ dojo.declare('BootstrapTreeViewWidget.widget.BootstrapTreeViewWidget', [ mxui.wi
 
     _showData : function (objList) {
         'use strict';
+        var
+            selectedId,
+			self = this;
 
         switch (this._contextObj.get(this.actionAttr)) {
         case this.ACTION_REFRESH:
@@ -193,16 +202,29 @@ dojo.declare('BootstrapTreeViewWidget.widget.BootstrapTreeViewWidget', [ mxui.wi
 
         }
 
+        // If a selection was passed in, select it again
+        selectedId = this._contextObj.getReference(this.selectionReference.substr(0, this.selectionReference.indexOf('/')));
+        if (selectedId) {
+			setTimeout(function () {
+				self._setSelection('span' + selectedId);
+			}, 100);
+        }
+
         // Reset the action
+        this._resetAction();
+    },
+
+    _resetAction : function () {
+        'use strict';
         this._contextObj.set(this.actionAttr, '');
+        this._contextObj.setReference(this.selectionReference.substr(0, this.selectionReference.indexOf('/')), null);
         mx.data.commit({
             mxobj    : this._contextObj,
             error    : function (error) {
                 console.log(error.description);
                 console.dir(error);
-			}
+            }
         });
-
     },
 
     _reloadTree : function (objList) {
@@ -380,31 +402,37 @@ dojo.declare('BootstrapTreeViewWidget.widget.BootstrapTreeViewWidget', [ mxui.wi
 
     _handleItemClick : function (evt) {
         'use strict';
+		this._setSelection(evt.target.id);
+        evt.stopPropagation();
+    },
+
+    _setSelection : function (targetId) {
+        'use strict';
         var
-            objId = evt.target.getAttribute(this.ATTR_OBJ_ID),
-            target = evt.target;
+            nodeList,
+            objId;
 
         // Remove the mark on any other node
         dojo.query('#' + this._ulMainElement.id + ' span.treeview-selected').forEach(function (element) {
             dojo.removeClass(element, 'treeview-selected');
         });
         // Mark the selected node
-        dojo.addClass(target.id, 'treeview-selected');
-
-        // Call the microflow
-        mx.data.action({
-            params: {
-                applyto: 'selection',
-                actionname: this.onClickMicroflow,
-                guids: [objId]
-            },
-            error: function (error) {
-                console.log(error.description);
-            }
-        }, this);
-
-        evt.stopPropagation();
+        nodeList = dojo.query('#' + targetId);
+        if (nodeList.length > 0) {
+            dojo.addClass(nodeList[0], 'treeview-selected');
+            objId = nodeList[0].getAttribute(this.ATTR_OBJ_ID);
+            // Call the microflow
+            mx.data.action({
+                params: {
+                    applyto: 'selection',
+                    actionname: this.onClickMicroflow,
+                    guids: [objId]
+                },
+                error: function (error) {
+                    console.log(error.description);
+                }
+            }, this);
+        }
     }
-
 
 });

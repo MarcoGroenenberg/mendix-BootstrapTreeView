@@ -66,4 +66,4 @@ The Parent reference is a self reference on the node data entity. This reference
 The Get data microflow is called for a full or partial build of the tree. It receives the widget data entity as parameter and should return a list of the entity specified at the Data entity property.
 
 ####On click microflow
-The On click microflow is called when a node is clicked.
+The On click microflow is called when a node is clicked and after the setSelection action selects the node.
