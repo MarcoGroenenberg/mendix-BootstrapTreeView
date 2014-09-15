@@ -9,6 +9,7 @@ ul.TreeViewWidget .treeview-expandable {
     background-repeat: no-repeat;
     background-position: 0px 2px;
     padding-left: 14px;
+	cursor: pointer;
 }
 
 ul.TreeViewWidget .treeview-expandable.treeview-expanded {
@@ -21,6 +22,7 @@ ul.TreeViewWidget .treeview-expandable.treeview-collapsed {
 
 ul.TreeViewWidget .treeview-leaf {
     padding-left: 14px;
+	cursor: default;
 }
 
 ul.TreeViewWidget li {
@@ -29,3 +31,12 @@ ul.TreeViewWidget li {
 
 ul.TreeViewWidget li span {
 }
+
+ul.TreeViewWidget li span.treeview-clickable {
+	cursor: pointer;
+}
+
+ul.TreeViewWidget li span.treeview-not-clickable {
+	cursor: default;
+}
+

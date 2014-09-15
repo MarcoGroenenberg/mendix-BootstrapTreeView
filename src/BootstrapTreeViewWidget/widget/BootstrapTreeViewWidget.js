@@ -22,18 +22,22 @@ dojo.declare('BootstrapTreeViewWidget.widget.BootstrapTreeViewWidget', [ mxui.wi
 	 * Internal variables.
 	 * ======================
 	 */
-	_contextGuid			: null,
 	_contextObj				: null,
+    _handle                 : null,
 
 	// Extra variables
     _objMap                 : {},
     _parentObjMap           : {},
+    _ulMainElement          : null,
     _currentDepth           : 0,
 
     // Fixed values
     MAX_DEPTH               : 50,
-    ATTR_LEVEL              : "data-level",
-    ATTR_OBJ_ID             : "data-objId",
+    ATTR_LEVEL              : 'data-level',
+    ATTR_OBJ_ID             : 'data-objId',
+    ACTION_REFRESH          : 'refresh',
+    ACTION_UPDATE           : 'update',
+    ACTION_SET_SELECTION    : 'setSelection',
 
 	/**
 	 * Mendix Widget methods.
@@ -61,7 +65,6 @@ dojo.declare('BootstrapTreeViewWidget.widget.BootstrapTreeViewWidget', [ mxui.wi
     startup: function () {
         'use strict';
 
-
         // postCreate
         console.log('BootstrapTreeViewWidget - startup');
     },
@@ -73,27 +76,22 @@ dojo.declare('BootstrapTreeViewWidget.widget.BootstrapTreeViewWidget', [ mxui.wi
 	update : function (obj, callback) {
 		'use strict';
 
-        // startup
-        console.log('BootstrapTreeViewWidget - update');
+        if (this._handle) {
+            mx.data.unsubscribe(this._handle);
+        }
 
-		if (typeof obj === 'string') {
-			this._contextGuid = obj;
-			mx.data.get({
-				guids    : [this._contextGuid],
-				callback : dojo.hitch(this, function (objs) {
-					this._contextObj = objs;
-				})
-			});
-		} else {
-			this._contextObj = obj;
-		}
+		this._contextObj = obj;
 
 		if (obj === null) {
 			// Sorry no data no show!
 			console.log('BootstrapTreeViewWidget  - update - We did not get any context object!');
 		} else {
-			// Load data
-			this._loadData();
+            // Load data
+            this._loadData();
+            this._handle = mx.data.subscribe({
+                guid: this._contextObj.getGuid(),
+                callback: dojo.hitch(this, this._loadData)
+            });
 		}
 
 		if (callback !== 'undefined') {
@@ -126,7 +124,9 @@ dojo.declare('BootstrapTreeViewWidget.widget.BootstrapTreeViewWidget', [ mxui.wi
 
 	unintialize: function () {
         'use strict';
-
+        if (this._handle) {
+            mx.data.unsubscribe(this._handle);
+        }
 	},
 
 	/**
@@ -170,23 +170,103 @@ dojo.declare('BootstrapTreeViewWidget.widget.BootstrapTreeViewWidget', [ mxui.wi
     _showData : function (objList) {
         'use strict';
         var
-            mainObjList = [],
+            action;
+
+        action = this._contextObj.get(this.actionAttr);
+        switch (action) {
+        case this.ACTION_REFRESH:
+            // Reload entire tree
+            this._reloadTree(objList);
+            break;
+
+        case this.ACTION_UPDATE:
+            // Update data, add or update nodes
+            this._updateTree(objList);
+            break;
+
+        case this.ACTION_SET_SELECTION:
+
+            break;
+
+        default:
+        }
+
+        // Reset the action
+        this._contextObj.set(this.actionAttr, '');
+        mx.data.commit({
+            mxobj    : this._contextObj,
+            error    : function (error) {
+                console.log(error.description);
+                console.dir(error);
+			}
+        });
+
+    },
+
+    _reloadTree : function (objList) {
+        'use strict';
+        var
+            mainObjList,
             obj,
             objIndex,
-            parentId,
-            ulMainElement;
-
-        console.dir(objList);
+            parentId;
 
         // Destroy any old data.
         dojo.empty(this.domNode);
         this._objMap = {};
         this._parentObjMap = {};
 
+        mainObjList = this._loadObjList(objList);
+
+        // Create the list(s)
+        this._ulMainElement = document.createElement('ul');
+        dojo.addClass(this._ulMainElement, this.baseClass);
+        this._currentDepth = 0;
+        this._showObjList(this._ulMainElement, mainObjList, 'treeview-main');
+        this.domNode.appendChild(this._ulMainElement);
+    },
+
+    _updateTree : function (objList) {
+        'use strict';
+        var
+            currentObj,
+            mainObjList,
+            obj,
+            objId,
+            objIndex;
+
+        // No data returned
+        if (objList === null) {
+            return;
+        }
+        // No array returned
+        if (Object.prototype.toString.call(objList) === '[object Array]') {
+            return;
+        }
+
+        mainObjList = this._loadObjList(objList);
+
+        this._currentDepth = 0;
+        this._showObjList(this._ulMainElement, mainObjList, 'treeview-main');
+
+        // Objecten zijn mogelijk al verwerkt tijdens _showObjList
+        for (objIndex = 0; objIndex < objList.length; objIndex = objIndex + 1) {
+            obj = objList[objIndex];
+            objId = obj.getGuid();
+        }
+    },
+    _loadObjList : function (objList) {
+        'use strict';
+        var
+            mainObjList = [],
+            obj,
+            objIndex,
+            parentId;
+
         // Process all nodes, group by parent node and find the nodes with no parent.
         for (objIndex = 0; objIndex < objList.length; objIndex = objIndex + 1) {
             obj = objList[objIndex];
-            parentId = obj.getReference('TreeView.ParentNode');
+            parentId = obj.getReference(this.parentReference.substr(0, this.parentReference.indexOf('/')));
             this._objMap[obj.getGuid()] = obj;
             if (parentId) {
                 if (this._parentObjMap[parentId]) {
@@ -198,13 +278,7 @@ dojo.declare('BootstrapTreeViewWidget.widget.BootstrapTreeViewWidget', [ mxui.wi
                 mainObjList.push(obj);
             }
         }
-
-        // Create the list(s)
-        this._currentDepth = 0;
-        ulMainElement = document.createElement("ul");
-        dojo.addClass(ulMainElement, this.baseClass);
-        this._showObjList(ulMainElement, mainObjList, "treeview-main");
-        this.domNode.appendChild(ulMainElement);
+        return mainObjList;
     },
 
     _showObjList : function (parentElement, objList, extraLiClass) {
@@ -218,60 +292,76 @@ dojo.declare('BootstrapTreeViewWidget.widget.BootstrapTreeViewWidget', [ mxui.wi
             spanElement;
 
         if (this._currentDepth === this.MAX_DEPTH) {
-            console.log(this.domNode.id + ": Recursion depth exceeded maximum: " + this.MAX_DEPTH);
+            console.log(this.domNode.id + ': Recursion depth exceeded maximum: ' + this.MAX_DEPTH);
             return;
         }
         this._currentDepth = this._currentDepth + 1;
         for (objIndex = 0; objIndex < objList.length; objIndex = objIndex + 1) {
             obj = objList[objIndex];
-            objId = obj.getGuid();
-
-            // Create the list item element
-            liElement = document.createElement("li");
-            liElement.setAttribute(this.ATTR_LEVEL, this._currentDepth);
-            liElement.setAttribute(this.ATTR_OBJ_ID, objId);
-            liElement.id = 'li' + objId;
-            if (extraLiClass) {
-                dojo.addClass(liElement, extraLiClass);
-            }
-
-            // Create the span with the caption
-            spanElement = mxui.dom.create('span', obj.get('Caption'));
-            spanElement.setAttribute(this.ATTR_LEVEL, this._currentDepth);
-            spanElement.setAttribute(this.ATTR_OBJ_ID, objId);
-            spanClass = obj.get('NodeClass');
-            spanElement.id = 'span' + objId;
-            if (spanClass) {
-                dojo.addClass(spanElement, spanClass);
-            }
-
-            // Add onClick handlers
-            dojo.on(liElement, 'click', dojo.hitch(this, this._handleExpandCollapse));
-            dojo.on(spanElement, 'click', dojo.hitch(this, this._handleItemClick));
-
-            // Put the pieces together
-            liElement.appendChild(spanElement);
-            parentElement.appendChild(liElement);
-
-            // Object had child objects?
-            if (this._parentObjMap[objId]) {
-                dojo.addClass(liElement, "treeview-expandable treeview-expanded");
-                this._showObjList(liElement, this._parentObjMap[objId], "treeview-sub");
-            } else {
-                dojo.addClass(liElement, "treeview-leaf");
-            }
+            this._createNode(parentElement, obj, extraLiClass);
         }
 
         this._currentDepth = this._currentDepth - 1;
+    },
+
+    _createNode : function (parentElement, obj, extraLiClass) {
+        'use strict';
+        var
+            liElement,
+            objId,
+            objIndex,
+            spanClass,
+            spanElement;
+
+        objId = obj.getGuid();
+
+        // Create the list item element
+        liElement = document.createElement('li');
+        liElement.setAttribute(this.ATTR_LEVEL, this._currentDepth);
+        liElement.setAttribute(this.ATTR_OBJ_ID, objId);
+        liElement.id = 'li' + objId;
+        if (extraLiClass) {
+            dojo.addClass(liElement, extraLiClass);
+        }
+
+        // Create the span with the caption
+        spanElement = mxui.dom.create('span', obj.get(this.captionAttr));
+        spanElement.setAttribute(this.ATTR_LEVEL, this._currentDepth);
+        spanElement.setAttribute(this.ATTR_OBJ_ID, objId);
+        spanClass = obj.get(this.classAttr);
+        spanElement.id = 'span' + objId;
+        if (spanClass) {
+            dojo.addClass(spanElement, spanClass);
+        }
+
+        // Add onClick handlers
+        dojo.on(liElement, 'click', dojo.hitch(this, this._handleExpandCollapse));
+        if (this.onClickMicroflow) {
+            dojo.on(spanElement, 'click', dojo.hitch(this, this._handleItemClick));
+            dojo.addClass(spanElement, 'treeview-clickable');
+        } else {
+            dojo.addClass(spanElement, 'treeview-not-clickable');
+        }
+
+        // Put the pieces together
+        liElement.appendChild(spanElement);
+        parentElement.appendChild(liElement);
+
+        // Object had child objects?
+        if (this._parentObjMap[objId]) {
+            dojo.addClass(liElement, 'treeview-expandable treeview-expanded');
+            this._showObjList(liElement, this._parentObjMap[objId], 'treeview-sub');
+        } else {
+            dojo.addClass(liElement, 'treeview-leaf');
+        }
+
     },
 
     _handleExpandCollapse : function (evt) {
         'use strict';
         var
             target = evt.target;
-        
-        console.log('_handleExpandCollapse');
-        console.dir(evt);
+
         if (dojo.hasClass(target, 'treeview-expanded')) {
             // Hide all li elements but not the span under the clicked element
             dojo.query('#' + target.id + ' > li').forEach(function (liElement) {
@@ -288,15 +378,21 @@ dojo.declare('BootstrapTreeViewWidget.widget.BootstrapTreeViewWidget', [ mxui.wi
     _handleItemClick : function (evt) {
         'use strict';
         var
-            obj,
-            objId;
-        console.log('_handleItemClick');
-        console.dir(evt);
-        objId = evt.target.getAttribute(this.ATTR_OBJ_ID);
-        obj = this._objMap[objId];
-        alert('Item click: ' + obj.get('Caption'));
+            objId = evt.target.getAttribute(this.ATTR_OBJ_ID);
+        //
+        mx.data.action({
+            params: {
+                applyto: 'selection',
+                actionname: this.onClickMicroflow,
+                guids: [objId]
+            },
+            error: function (error) {
+                console.log(error.description);
+            }
+        }, this);
 
         evt.stopPropagation();
     }
+
 
 });

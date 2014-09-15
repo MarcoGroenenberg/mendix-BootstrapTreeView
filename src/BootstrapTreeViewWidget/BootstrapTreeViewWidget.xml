@@ -7,20 +7,60 @@
 
   <properties>
         <property key="baseClass" type="string" required="true" defaultValue="TreeViewWidget">
-            <caption>CSS class</caption>
+            <caption>Base CSS class</caption>
             <category>Appearance</category>
-            <description>The base CSS class.</description>
+            <description>The base CSS class, used to style the entire tree.</description>
         </property>
-        <property key="dataEntity" type="entity" required="true" defaultValue="" isDefault="false" allowNonPersistableEntities="true" >
+        <property key="actionAttr" type="attribute" required="true">
+            <caption>Action attribute</caption>
+            <category>Configuration</category>
+            <description>Widget action, empty for no action, actions: refresh, update, setSelection.</description>
+            <attributeTypes>
+                <attributeType name="String"/>
+            </attributeTypes>
+        </property>
+        <property key="selectionReference" type="entity" isPath="yes" pathType="reference" allowNonPersistableEntities="true" required="true">
+            <caption>Selection reference</caption>
+            <category>Configuration</category>
+            <description>For action setSelection, the object that must be selected. Must be a reference from the context entity to the data entity.</description>
+        </property>
+        <property key="dataEntity" type="entity" required="true" allowNonPersistableEntities="true" >
             <caption>Data entity</caption>
             <category>Configuration</category>
             <description>The entity returned by the get data microflow</description>
+        </property>
+        <property key="captionAttr" type="attribute" entityProperty="dataEntity" required="true">
+            <caption>Caption attribute</caption>
+            <category>Configuration</category>
+            <description>The attribute used as caption on the elements.</description>
+            <attributeTypes>
+                <attributeType name="String"/>
+            </attributeTypes>
+        </property>
+        <property key="classAttr" type="attribute" entityProperty="dataEntity" required="false">
+            <caption>CSS class attribute</caption>
+            <category>Configuration</category>
+            <description>The attribute used as CSS class on the elements. (optional)</description>
+            <attributeTypes>
+                <attributeType name="String"/>
+            </attributeTypes>
+        </property>
+        <property key="parentReference" type="entity" entityProperty="dataEntity" isPath="yes" pathType="reference" allowNonPersistableEntities="true" required="true">
+            <caption>Parent reference</caption>
+            <category>Configuration</category>
+            <description>The parent reference, often a self reference on the data entity.</description>
         </property>
         <property key="getDataMicroflow" type="microflow" required="true" defaultValue="">
             <caption>Get data microflow</caption>
             <category>Configuration</category>
             <description>This microflow is called to get the data</description>
             <returnType type="Object" isList="true" entityProperty="dataEntity"></returnType>
+        </property>
+        <property key="onClickMicroflow" type="microflow" entityProperty="dataEntity" required="false" defaultValue="">
+            <caption>On click microflow</caption>
+            <category>Configuration</category>
+            <description>This microflow is called when a node in the tree is clicked.</description>
+            <returnType type="Void"></returnType>
         </property>
 	</properties>
 </widget>
