@@ -30,6 +30,11 @@ ul.TreeViewWidget li {
 }
 
 ul.TreeViewWidget li span {
+    padding: 3px;
+}
+
+ul.TreeViewWidget li span.treeview-selected {
+    background-color: #B9D7DD;
 }
 
 ul.TreeViewWidget li span.treeview-clickable {

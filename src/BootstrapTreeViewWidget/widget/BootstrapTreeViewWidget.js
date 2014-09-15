@@ -151,29 +151,36 @@ dojo.declare('BootstrapTreeViewWidget.widget.BootstrapTreeViewWidget', [ mxui.wi
 	 */
     _loadData : function () {
         'use strict';
+        switch (this._contextObj.get(this.actionAttr)) {
+        case this.ACTION_REFRESH:
+        case this.ACTION_UPDATE:
+            // Reload or update data
+            mx.data.action({
+                params: {
+                    applyto: 'selection',
+                    actionname: this.getDataMicroflow,
+                    guids: [this._contextObj.getGuid()]
+                },
+                callback: dojo.hitch(this, this._showData),
+                error: function (error) {
+                    console.log(error.description);
+                }
+            }, this);
+            break;
 
-        mx.data.action({
-            params: {
-                applyto: 'selection',
-                actionname: this.getDataMicroflow,
-                guids: [this._contextObj.getGuid()]
-            },
-            callback: dojo.hitch(this, this._showData),
-            error: function (error) {
-                console.log(error.description);
-            }
-        }, this);
+        case this.ACTION_SET_SELECTION:
 
+            break;
+
+        default:
+        }
 
     },
 
     _showData : function (objList) {
         'use strict';
-        var
-            action;
 
-        action = this._contextObj.get(this.actionAttr);
-        switch (action) {
+        switch (this._contextObj.get(this.actionAttr)) {
         case this.ACTION_REFRESH:
             // Reload entire tree
             this._reloadTree(objList);
@@ -184,11 +191,6 @@ dojo.declare('BootstrapTreeViewWidget.widget.BootstrapTreeViewWidget', [ mxui.wi
             this._updateTree(objList);
             break;
 
-        case this.ACTION_SET_SELECTION:
-
-            break;
-
-        default:
         }
 
         // Reset the action
@@ -220,6 +222,7 @@ dojo.declare('BootstrapTreeViewWidget.widget.BootstrapTreeViewWidget', [ mxui.wi
 
         // Create the list(s)
         this._ulMainElement = document.createElement('ul');
+        this._ulMainElement.id = 'ul' + this._contextObj.getGuid();
         dojo.addClass(this._ulMainElement, this.baseClass);
         this._currentDepth = 0;
         this._showObjList(this._ulMainElement, mainObjList, 'treeview-main');
@@ -378,8 +381,17 @@ dojo.declare('BootstrapTreeViewWidget.widget.BootstrapTreeViewWidget', [ mxui.wi
     _handleItemClick : function (evt) {
         'use strict';
         var
-            objId = evt.target.getAttribute(this.ATTR_OBJ_ID);
-        //
+            objId = evt.target.getAttribute(this.ATTR_OBJ_ID),
+            target = evt.target;
+
+        // Remove the mark on any other node
+        dojo.query('#' + this._ulMainElement.id + ' span.treeview-selected').forEach(function (element) {
+            dojo.removeClass(element, 'treeview-selected');
+        });
+        // Mark the selected node
+        dojo.addClass(target.id, 'treeview-selected');
+
+        // Call the microflow
         mx.data.action({
             params: {
                 applyto: 'selection',
