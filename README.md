@@ -43,9 +43,9 @@ The Base CSS class can be used to adjust the styling for a specific tree view. P
 ####Action attribute
 The Action attribute tells the widget to perform a task:
 
-- Fully rebuild the tree
-- Add or replace one or more nodes
-- Select a node.
+- refresh: Fully rebuild the tree
+- update: Add or replace one or more nodes
+- setSelection: Select a node.
 
 ####Selection reference
 The Selection reference can be set to the object that must be selected next. This reference must be from the widget data entity to the node data entity. Using the generalisations: this should reference the common node data generalization for the treeview.
