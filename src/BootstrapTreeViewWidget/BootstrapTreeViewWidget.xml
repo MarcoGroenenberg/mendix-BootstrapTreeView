@@ -16,7 +16,7 @@
             <category>Configuration</category>
             <description>Widget action, empty for no action, actions: refresh, update, setSelection.</description>
             <attributeTypes>
-                <attributeType name="String"/>
+                <attributeType name="Enum"/>
             </attributeTypes>
         </property>
         <property key="selectionReference" type="entity" isPath="yes" pathType="reference" allowNonPersistableEntities="true" required="true">

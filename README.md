@@ -11,7 +11,7 @@ Mendix Tree view widget. Rather than configuring the data model in the widget, t
 - Top level objects do not have a parent
 - Lower lever objects have a parent; the tree is build by linking objects using their parent reference
 - Set the currently selected item from a microflow
-- Fully reload the tree or only perform an incremental update.
+- Fully reload the tree or only perform an incremental update, to update or add nodes without re-rendering the tree.
 
 
 ##Dependencies

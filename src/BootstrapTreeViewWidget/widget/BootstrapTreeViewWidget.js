@@ -300,6 +300,7 @@ dojo.declare('BootstrapTreeViewWidget.widget.BootstrapTreeViewWidget', [ mxui.wi
             objIndex,
             parentElement,
             parentId,
+            spanNode,
             skippedObjList,
             updateSpanElement;
 
@@ -331,7 +332,8 @@ dojo.declare('BootstrapTreeViewWidget.widget.BootstrapTreeViewWidget', [ mxui.wi
         for (objIndex = 0; objIndex < existingObjList.length; objIndex = objIndex + 1) {
             obj = existingObjList[objIndex];
             objId = obj.getGuid();
-            dojo.byId('span' + objId).innerHtml = obj.get(this.captionAttr);
+            spanNode = dojo.byId('span' + objId);
+            spanNode.firstChild.nodeValue = obj.get(this.captionAttr);
         }
 
         // Process the new objects, these may be in any order.
