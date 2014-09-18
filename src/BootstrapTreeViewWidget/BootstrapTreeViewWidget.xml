@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <widget id="BootstrapTreeViewWidget.widget.BootstrapTreeViewWidget" needsEntityContext="true" xmlns="http://www.mendix.com/widget/1.0/">
-  <name>BootstrapTreeViewWidget</name>
-  <description>Mendix Tree view widget</description>
+  <name>Bootstrap TreeView Widget</name>
+  <description>The Bootstrap TreeView widget.</description>
 
   <icon>R0lGODlhEAAQAJEAAMDAwNjW1v///1BQUCH5BAEAAAAALAAAAAAQABAAAAImhI+Jw6w5hBxvSUGraU6f7H3hAnUlNwQguZjsCKyh3Dwoo8I1jBQAOw==</icon>
 
@@ -21,17 +21,17 @@
         </property>
         <property key="selectionReference" type="entity" isPath="yes" pathType="reference" allowNonPersistableEntities="true" required="true">
             <caption>Selection reference</caption>
-            <category>Configuration</category>
+            <category>Data source</category>
             <description>For action setSelection, the object that must be selected. Must be a reference from the context entity to the data entity.</description>
         </property>
         <property key="dataEntity" type="entity" required="true" allowNonPersistableEntities="true" >
             <caption>Data entity</caption>
-            <category>Configuration</category>
+            <category>Data source</category>
             <description>The entity returned by the get data microflow</description>
         </property>
         <property key="captionAttr" type="attribute" entityProperty="dataEntity" required="true">
             <caption>Caption attribute</caption>
-            <category>Configuration</category>
+            <category>Data source</category>
             <description>The attribute used as caption on the elements.</description>
             <attributeTypes>
                 <attributeType name="String"/>
@@ -39,7 +39,7 @@
         </property>
         <property key="classAttr" type="attribute" entityProperty="dataEntity" required="false">
             <caption>CSS class attribute</caption>
-            <category>Configuration</category>
+            <category>Data source</category>
             <description>The attribute used as CSS class on the elements. (optional)</description>
             <attributeTypes>
                 <attributeType name="String"/>
@@ -47,18 +47,18 @@
         </property>
         <property key="parentReference" type="entity" entityProperty="dataEntity" isPath="yes" pathType="reference" allowNonPersistableEntities="true" required="true">
             <caption>Parent reference</caption>
-            <category>Configuration</category>
+            <category>Data source</category>
             <description>The parent reference, often a self reference on the data entity.</description>
         </property>
         <property key="getDataMicroflow" type="microflow" required="true" defaultValue="">
             <caption>Get data microflow</caption>
-            <category>Configuration</category>
+            <category>Events</category>
             <description>This microflow is called to get the data</description>
             <returnType type="Object" isList="true" entityProperty="dataEntity"></returnType>
         </property>
         <property key="onClickMicroflow" type="microflow" entityProperty="dataEntity" required="false" defaultValue="">
             <caption>On click microflow</caption>
-            <category>Configuration</category>
+            <category>Events</category>
             <description>This microflow is called when a node in the tree is clicked.</description>
             <returnType type="Void"></returnType>
         </property>
