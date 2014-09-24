@@ -19,10 +19,13 @@
                 <attributeType name="Enum"/>
             </attributeTypes>
         </property>
-        <property key="selectionReference" type="entity" isPath="yes" pathType="reference" allowNonPersistableEntities="true" required="true">
-            <caption>Selection reference</caption>
-            <category>Data source</category>
-            <description>For action setSelection, the object that must be selected. Must be a reference from the context entity to the data entity.</description>
+        <property key="selectionKeyAttr" type="attribute" required="true">
+            <caption>Selection key attribute</caption>
+            <category>Configuration</category>
+            <description>For action setSelection, the key of the object that must be selected. </description>
+            <attributeTypes>
+                <attributeType name="String"/>
+            </attributeTypes>
         </property>
         <property key="dataEntity" type="entity" required="true" allowNonPersistableEntities="true" >
             <caption>Data entity</caption>
@@ -33,6 +36,14 @@
             <caption>Caption attribute</caption>
             <category>Data source</category>
             <description>The attribute used as caption on the elements.</description>
+            <attributeTypes>
+                <attributeType name="String"/>
+            </attributeTypes>
+        </property>
+        <property key="appKeyAttr" type="attribute" entityProperty="dataEntity" required="true">
+            <caption>Key attribute</caption>
+            <category>Data source</category>
+            <description>The attribute used as application key on the elements.</description>
             <attributeTypes>
                 <attributeType name="String"/>
             </attributeTypes>

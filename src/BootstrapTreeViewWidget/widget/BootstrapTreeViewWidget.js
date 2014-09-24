@@ -26,13 +26,18 @@ dojo.declare('BootstrapTreeViewWidget.widget.BootstrapTreeViewWidget', [ mxui.wi
     _handle                             : null,
 
     // Extra variables
-    _objMap                             : {},
+    _objMap                             : {},       // The objects as returned by the microflow
+    _appKeyMap                          : {},       // Application key map
+    _nodeClassMap                       : {},       // The node classes as set on the widget. These are kept separately because we need to
+                                                    // remove the previous value from the DOM element when updating the tree.
+                                                    // The Mendix object has already been changed when the node is updated
     _parentObjMap                       : {},
+    _collapsedElementMap                : {},
     _ulMainElement                      : null,
     _currentDepth                       : 0,
     _parentReferenceName                : null,
-    _selectionReferenceName             : null,
-    _getDataMicroflowCallPending	: null,
+    _getDataMicroflowCallPending        : null,
+    _progressDialogId                   : null,
 
     // Fixed values
     MAX_DEPTH                           : 50,
@@ -89,6 +94,10 @@ dojo.declare('BootstrapTreeViewWidget.widget.BootstrapTreeViewWidget', [ mxui.wi
             // Sorry no data no show!
             console.log('BootstrapTreeViewWidget  - update - We did not get any context object!');
         } else {
+            // Almost all data is cleared with each refresh of the widget.
+            // The collapsed element map is kept to collaps nodes that were collapsed before the refresh.
+            // When we get a new context object, the map must be cleared.
+            this._collapsedElementMap = {};
             // Load data
             this._loadData();
             this._handle = mx.data.subscribe({
@@ -140,7 +149,6 @@ dojo.declare('BootstrapTreeViewWidget.widget.BootstrapTreeViewWidget', [ mxui.wi
         'use strict';
 
         this._parentReferenceName = this.parentReference.substr(0, this.parentReference.indexOf('/'));
-        this._selectionReferenceName = this.selectionReference.substr(0, this.selectionReference.indexOf('/'));
 
         dojo.addClass(this.domNode, this.baseClass);
     },
@@ -157,8 +165,6 @@ dojo.declare('BootstrapTreeViewWidget.widget.BootstrapTreeViewWidget', [ mxui.wi
      */
     _loadData : function () {
         'use strict';
-        var
-            selectedId;
 
 //        console.log('_loadData: ' + this._contextObj.get(this.actionAttr));
 
@@ -171,6 +177,7 @@ dojo.declare('BootstrapTreeViewWidget.widget.BootstrapTreeViewWidget', [ mxui.wi
                 console.log('Skipped microflow call as we did not get an answer from a previous call.');
             } else {
                 this._getDataMicroflowCallPending = true;
+                this._progressDialogId = mx.ui.showProgress();
                 mx.data.action({
                     params: {
                         applyto: 'selection',
@@ -179,6 +186,7 @@ dojo.declare('BootstrapTreeViewWidget.widget.BootstrapTreeViewWidget', [ mxui.wi
                     },
                     callback: dojo.hitch(this, this._showData),
                     error: function (error) {
+                        mx.ui.hideProgress(this._progressDialogId);
                         this._getDataMicroflowCallPending = false;
                         console.log(error.description);
                     }
@@ -187,8 +195,7 @@ dojo.declare('BootstrapTreeViewWidget.widget.BootstrapTreeViewWidget', [ mxui.wi
             break;
 
         case this.ACTION_SET_SELECTION:
-            selectedId = 'span' + this._contextObj.getReference(this._selectionReferenceName);
-            this._setSelection(selectedId);
+            this._setSelection(this._contextObj.get(this.selectionKeyAttr));
             this._resetAction();
 
             break;
@@ -203,11 +210,13 @@ dojo.declare('BootstrapTreeViewWidget.widget.BootstrapTreeViewWidget', [ mxui.wi
     _showData : function (objList) {
         'use strict';
         var
-            selectedId;
+            action,
+            selectedKey;
 
 //        console.log('_showData');
 
-        switch (this._contextObj.get(this.actionAttr)) {
+        action = this._contextObj.get(this.actionAttr);
+        switch (action) {
         case this.ACTION_REFRESH:
             // Reload entire tree
             this._reloadTree(objList);
@@ -221,28 +230,24 @@ dojo.declare('BootstrapTreeViewWidget.widget.BootstrapTreeViewWidget', [ mxui.wi
         }
 
         // If a selection was passed in, select it again
-        selectedId = this._contextObj.getReference(this._selectionReferenceName);
-        if (selectedId) {
-            this._setSelection('span' + selectedId);
+        selectedKey = this._contextObj.get(this.selectionKeyAttr);
+        if (selectedKey) {
+            this._setSelection(selectedKey);
         }
 
-        // Reset the action
+        // Reset the action before processing the selection to prevent a loop
         this._resetAction();
         this._getDataMicroflowCallPending = false;
+        mx.ui.hideProgress(this._progressDialogId);
 
 //        console.log('_showData end');
     },
 
     _resetAction : function () {
         'use strict';
-        var
-            selectedId;
-        
+
         this._contextObj.set(this.actionAttr, '');
-        selectedId = this._contextObj.getReference(this._selectionReferenceName);
-        if (selectedId) {
-            this._contextObj.removeReferences(this._selectionReferenceName, [selectedId]);
-        }
+        this._contextObj.set(this.selectionKeyAttr, '');
         mx.data.commit({
             mxobj    : this._contextObj,
             callback : function (obj) {},
@@ -256,17 +261,20 @@ dojo.declare('BootstrapTreeViewWidget.widget.BootstrapTreeViewWidget', [ mxui.wi
     _reloadTree : function (objList) {
         'use strict';
         var
+            appKey,
+            element,
             mainObjMap = {},
             obj,
             objId,
             objIndex,
-            objMap,
             parentId;
 
         // Destroy any old data.
         dojo.empty(this.domNode);
         this._objMap = {};
+        this._appKeyMap = {};
         this._parentObjMap = {};
+        this._nodeClassMap = {};
 
         // Process all nodes, group by parent node and find the nodes with no parent.
         for (objIndex = 0; objIndex < objList.length; objIndex = objIndex + 1) {
@@ -275,6 +283,7 @@ dojo.declare('BootstrapTreeViewWidget.widget.BootstrapTreeViewWidget', [ mxui.wi
             parentId = obj.getReference(this._parentReferenceName);
             this._updateObjMaps(obj);
             if (parentId) {
+                // No action
             } else {
                 mainObjMap[objId] = obj;
             }
@@ -286,7 +295,24 @@ dojo.declare('BootstrapTreeViewWidget.widget.BootstrapTreeViewWidget', [ mxui.wi
         dojo.addClass(this._ulMainElement, this.baseClass);
         this._currentDepth = 0;
         this._showObjList(this._ulMainElement, mainObjMap, 'treeview-main');
+
+        // Show the tree
         this.domNode.appendChild(this._ulMainElement);
+
+        // Set collapsed status on nodes that were collapsed before the refresh
+        for (appKey in this._collapsedElementMap) {
+            if (this._collapsedElementMap.hasOwnProperty(appKey)) {
+                obj = this._appKeyMap[appKey];
+                element = dojo.byId('li' + obj.getGuid());
+                if (element) {
+                    this._hideNode(element);
+                } else {
+                    // No longer exists
+                    delete this._collapsedElementMap[appKey];
+                }
+            }
+        }
+
     },
 
     _updateTree : function (objList) {
@@ -300,9 +326,9 @@ dojo.declare('BootstrapTreeViewWidget.widget.BootstrapTreeViewWidget', [ mxui.wi
             objIndex,
             parentElement,
             parentId,
-            spanNode,
-            skippedObjList,
-            updateSpanElement;
+            spanClass,
+            spanElement,
+            skippedObjList;
 
         // No data returned
         if (objList === null) {
@@ -324,16 +350,33 @@ dojo.declare('BootstrapTreeViewWidget.widget.BootstrapTreeViewWidget', [ mxui.wi
             } else {
                 newObjList.push(obj);
             }
-            // Update the object maps.
-            this._updateObjMaps(obj);
         }
 
         // Process the existing objects
         for (objIndex = 0; objIndex < existingObjList.length; objIndex = objIndex + 1) {
             obj = existingObjList[objIndex];
             objId = obj.getGuid();
-            spanNode = dojo.byId('span' + objId);
-            spanNode.firstChild.nodeValue = obj.get(this.captionAttr);
+
+            // Find the element and set the caption
+            spanElement = dojo.byId('span' + objId);
+            spanElement.firstChild.nodeValue = obj.get(this.captionAttr);
+
+            // Remove the node class if there is one.
+            spanClass = this._nodeClassMap[objId];
+            if (spanClass) {
+                dojo.removeClass(spanElement, spanClass);
+            }
+
+            // If the new object has a node class, set it.
+            spanClass = obj.get(this.classAttr);
+            spanElement.id = 'span' + objId;
+            if (spanClass) {
+                dojo.addClass(spanElement, spanClass);
+                this._nodeClassMap[objId] = spanClass;
+            }
+
+            // Update the object maps.
+            this._updateObjMaps(obj);
         }
 
         // Process the new objects, these may be in any order.
@@ -356,6 +399,8 @@ dojo.declare('BootstrapTreeViewWidget.widget.BootstrapTreeViewWidget', [ mxui.wi
                         }
                         this._createNode(parentElement, obj, 'treeview-sub');
                         elementCreated = true;
+                        // Update the object maps.
+                        this._updateObjMaps(obj);
                     } else {
                         skippedObjList.push(obj);
                     }
@@ -376,6 +421,7 @@ dojo.declare('BootstrapTreeViewWidget.widget.BootstrapTreeViewWidget', [ mxui.wi
     _updateObjMaps : function (obj) {
         'use strict';
         var
+            appKey,
             objId,
             objMap,
             parentId;
@@ -393,7 +439,10 @@ dojo.declare('BootstrapTreeViewWidget.widget.BootstrapTreeViewWidget', [ mxui.wi
                 this._parentObjMap[parentId] = objMap;
             }
         }
-
+        appKey = obj.get(this.appKeyAttr);
+        if (appKey) {
+            this._appKeyMap[appKey] = obj;
+        }
     },
 
     _showObjList : function (parentElement, objMap, extraLiClass) {
@@ -450,6 +499,8 @@ dojo.declare('BootstrapTreeViewWidget.widget.BootstrapTreeViewWidget', [ mxui.wi
         spanElement.id = 'span' + objId;
         if (spanClass) {
             dojo.addClass(spanElement, spanClass);
+            // Save the node class value separately as we need it when updating tree nodes.
+            this._nodeClassMap[objId] = spanClass;
         }
 
         // Add onClick handlers
@@ -478,53 +529,104 @@ dojo.declare('BootstrapTreeViewWidget.widget.BootstrapTreeViewWidget', [ mxui.wi
     _handleExpandCollapse : function (evt) {
         'use strict';
         var
-            target = evt.target;
+            appKey,
+            obj,
+            objId,
+            target,
+            targetId;
+
+        target = evt.target;
+        targetId = target.id;
+        objId = target.getAttribute(this.ATTR_OBJ_ID);
+        obj = this._objMap[objId];
+        appKey = obj.get(this.appKeyAttr);
 
         if (dojo.hasClass(target, 'treeview-expanded')) {
-            // Hide all li elements but not the span under the clicked element
-            dojo.query('#' + target.id + ' > li').forEach(function (liElement) {
-                dojo.query('#' + liElement.id).style('display', 'none');
-            });
-            dojo.replaceClass(target, 'treeview-collapsed', 'treeview-expanded');
+            this._hideNode(target);
+            this._collapsedElementMap[appKey] = appKey;
         } else if (dojo.hasClass(target, 'treeview-collapsed')) {
-            dojo.query('#' + target.id + ' > li').style('display', '');
-            dojo.replaceClass(target, 'treeview-expanded', 'treeview-collapsed');
+            this._showNode(target);
+            delete this._collapsedElementMap[appKey];
         }
         evt.stopPropagation();
     },
 
+    _hideNode : function (target) {
+        'use strict';
+        // Hide all li elements but not the span under the clicked element
+        dojo.query('#' + target.id + ' > li').forEach(function (liElement) {
+            dojo.query('#' + liElement.id).style('display', 'none');
+        });
+        dojo.replaceClass(target, 'treeview-collapsed', 'treeview-expanded');
+    },
+
+    _showNode : function (target) {
+        'use strict';
+        dojo.query('#' + target.id + ' > li').style('display', '');
+        dojo.replaceClass(target, 'treeview-expanded', 'treeview-collapsed');
+    },
+
     _handleItemClick : function (evt) {
         'use strict';
-        this._setSelection(evt.target.id);
+        this._setSelectionById(evt.target.getAttribute(this.ATTR_OBJ_ID));
         evt.stopPropagation();
     },
 
-    _setSelection : function (targetId) {
+    _setSelection : function (selectedKey) {
         'use strict';
         var
+            obj;
+        // Mark the selected node
+        obj = this._appKeyMap[selectedKey];
+        if (obj) {
+            this._setSelectionById(obj.getGuid());
+        } else {
+            this._setSelectionById(null);
+        }
+    },
+
+    _setSelectionById : function (objId) {
+        'use strict';
+        var
+            node,
             nodeList,
-            objId;
+            selectedNode,
+            targetId;
 
         // Remove the mark on any other node
         dojo.query('#' + this._ulMainElement.id + ' span.treeview-selected').forEach(function (element) {
             dojo.removeClass(element, 'treeview-selected');
         });
-        // Mark the selected node
-        nodeList = dojo.query('#' + targetId);
-        if (nodeList.length > 0) {
-            dojo.addClass(nodeList[0], 'treeview-selected');
-            objId = nodeList[0].getAttribute(this.ATTR_OBJ_ID);
-            // Call the microflow
-            mx.data.action({
-                params: {
-                    applyto: 'selection',
-                    actionname: this.onClickMicroflow,
-                    guids: [objId]
-                },
-                error: function (error) {
-                    console.log(error.description);
+
+        selectedNode = null;
+        if (objId) {
+            targetId = 'span' + objId;
+            nodeList = dojo.query('#' + targetId);
+            if (nodeList.length > 0) {
+                // Expand parent nodes if necessary
+                selectedNode = nodeList[0];
+                node = selectedNode.parentElement;
+                while (node.nodeName === 'LI') {
+                    if (dojo.hasClass(node, 'treeview-collapsed')) {
+                        this._showNode(node);
+                    }
+                    node = node.parentElement;
                 }
-            }, this);
+                // Set the selected class and scroll into view
+                dojo.addClass(selectedNode, 'treeview-selected');
+                dojo.window.scrollIntoView(selectedNode);
+                // Call the microflow
+                mx.data.action({
+                    params: {
+                        applyto: 'selection',
+                        actionname: this.onClickMicroflow,
+                        guids: [objId]
+                    },
+                    error: function (error) {
+                        console.log(error.description);
+                    }
+                }, this);
+            }
         }
     }
 
