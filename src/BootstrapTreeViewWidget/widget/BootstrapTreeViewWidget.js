@@ -84,6 +84,8 @@ dojo.declare('BootstrapTreeViewWidget.widget.BootstrapTreeViewWidget', [ mxui.wi
     update : function (obj, callback) {
         'use strict';
 
+//        console.log('BootstrapTreeViewWidget  - update');
+
         if (this._handle) {
             mx.data.unsubscribe(this._handle);
         }
@@ -105,6 +107,8 @@ dojo.declare('BootstrapTreeViewWidget.widget.BootstrapTreeViewWidget', [ mxui.wi
                 callback: dojo.hitch(this, this._loadData)
             });
         }
+
+//        console.log('BootstrapTreeViewWidget  - update end');
 
         if (callback !== 'undefined') {
             callback();
@@ -220,11 +224,13 @@ dojo.declare('BootstrapTreeViewWidget.widget.BootstrapTreeViewWidget', [ mxui.wi
         case this.ACTION_REFRESH:
             // Reload entire tree
             this._reloadTree(objList);
+//            console.log('_showData tree has been created');
             break;
 
         case this.ACTION_UPDATE:
             // Update data, add or update nodes
             this._updateTree(objList);
+//            console.log('_showData tree has been updated');
             break;
 
         }
@@ -574,6 +580,7 @@ dojo.declare('BootstrapTreeViewWidget.widget.BootstrapTreeViewWidget', [ mxui.wi
 
     _setSelection : function (selectedKey) {
         'use strict';
+//        console.log('_setSelection');
         var
             obj;
         // Mark the selected node
@@ -583,10 +590,12 @@ dojo.declare('BootstrapTreeViewWidget.widget.BootstrapTreeViewWidget', [ mxui.wi
         } else {
             this._setSelectionById(null);
         }
+//        console.log('_setSelection end');
     },
 
     _setSelectionById : function (objId) {
         'use strict';
+//        console.log('_setSelectionById');
         var
             node,
             nodeList,
@@ -616,6 +625,7 @@ dojo.declare('BootstrapTreeViewWidget.widget.BootstrapTreeViewWidget', [ mxui.wi
                 dojo.addClass(selectedNode, 'treeview-selected');
                 dojo.window.scrollIntoView(selectedNode);
                 // Call the microflow
+//                console.log('_setSelectionById call microflow');
                 mx.data.action({
                     params: {
                         applyto: 'selection',
@@ -628,6 +638,7 @@ dojo.declare('BootstrapTreeViewWidget.widget.BootstrapTreeViewWidget', [ mxui.wi
                 }, this);
             }
         }
+//        console.log('_setSelectionById end');
     }
 
 });
