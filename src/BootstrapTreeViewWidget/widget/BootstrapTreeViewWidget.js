@@ -143,6 +143,9 @@ dojo.declare('BootstrapTreeViewWidget.widget.BootstrapTreeViewWidget', [ mxui.wi
         if (this._handle) {
             mx.data.unsubscribe(this._handle);
         }
+        if (this._progressDialogId) {
+            this._hideProgress();
+        }
     },
 
     /**
@@ -181,7 +184,7 @@ dojo.declare('BootstrapTreeViewWidget.widget.BootstrapTreeViewWidget', [ mxui.wi
                 console.log('Skipped microflow call as we did not get an answer from a previous call.');
             } else {
                 this._getDataMicroflowCallPending = true;
-                this._progressDialogId = mx.ui.showProgress();
+                this._showProgress();
                 mx.data.action({
                     params: {
                         applyto: 'selection',
@@ -190,7 +193,7 @@ dojo.declare('BootstrapTreeViewWidget.widget.BootstrapTreeViewWidget', [ mxui.wi
                     },
                     callback: dojo.hitch(this, this._showData),
                     error: function (error) {
-                        mx.ui.hideProgress(this._progressDialogId);
+                        this._hideProgress();
                         this._getDataMicroflowCallPending = false;
                         console.log(error.description);
                     }
@@ -244,7 +247,7 @@ dojo.declare('BootstrapTreeViewWidget.widget.BootstrapTreeViewWidget', [ mxui.wi
         // Reset the action before processing the selection to prevent a loop
         this._resetAction();
         this._getDataMicroflowCallPending = false;
-        mx.ui.hideProgress(this._progressDialogId);
+        this._hideProgress();
 
 //        console.log('_showData end');
     },
@@ -639,6 +642,23 @@ dojo.declare('BootstrapTreeViewWidget.widget.BootstrapTreeViewWidget', [ mxui.wi
             }
         }
 //        console.log('_setSelectionById end');
+    },
+
+    /**
+     * Show progress indicator, depends on Mendix version
+     */
+    _showProgress: function () {
+        'use strict';
+        this._progressDialogId = mx.ui.showProgress();
+    },
+
+    /**
+     * Hide progress indicator, depends on Mendix version
+     */
+    _hideProgress: function () {
+        'use strict';
+        mx.ui.hideProgress(this._progressDialogId);
+        this._progressDialogId = null;
     }
 
 });
