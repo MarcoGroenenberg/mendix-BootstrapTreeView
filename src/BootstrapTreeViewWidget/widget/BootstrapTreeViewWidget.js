@@ -138,7 +138,7 @@ dojo.declare('BootstrapTreeViewWidget.widget.BootstrapTreeViewWidget', [ mxui.wi
 
     },
 
-    unintialize: function () {
+    uninitialize: function () {
         'use strict';
         if (this._handle) {
             mx.data.unsubscribe(this._handle);
