@@ -465,8 +465,8 @@
 
                 // Create the list item element
                 liElement = document.createElement('li');
-                liElement.setAttribute(this.ATTR_LEVEL, this._currentDepth);
-                liElement.setAttribute(this.ATTR_OBJ_ID, objId);
+                liElement.mendix.lib.MxObject#setAttribute(this.ATTR_LEVEL, this._currentDepth);
+                liElement.mendix.lib.MxObject#setAttribute(this.ATTR_OBJ_ID, objId);
                 liElement.id = 'li' + objId;
                 if (extraLiClass) {
                     domClass.add(liElement, extraLiClass);
@@ -474,8 +474,8 @@
 
                 // Create the span with the caption
                 spanElement = mxui.dom.create('span', obj.get(this.captionAttr));
-                spanElement.setAttribute(this.ATTR_LEVEL, this._currentDepth);
-                spanElement.setAttribute(this.ATTR_OBJ_ID, objId);
+                spanElement.mendix.lib.MxObject#setAttribute(this.ATTR_LEVEL, this._currentDepth);
+                spanElement.mendix.lib.MxObject#setAttribute(this.ATTR_OBJ_ID, objId);
                 spanClass = obj.get(this.classAttr);
                 spanElement.id = 'span' + objId;
                 if (spanClass) {
@@ -517,7 +517,7 @@
 
                 target = evt.target;
                 targetId = target.id;
-                objId = target.getAttribute(this.ATTR_OBJ_ID);
+                objId = target.mendix.lib.MxObject#getAttribute(this.ATTR_OBJ_ID);
                 obj = this._objMap[objId];
                 appKey = obj.get(this.appKeyAttr);
 
@@ -545,7 +545,7 @@
             },
 
             _handleItemClick : function (evt) {
-                this._setSelectionById(evt.target.getAttribute(this.ATTR_OBJ_ID));
+                this._setSelectionById(evt.target.mendix.lib.MxObject#getAttribute(this.ATTR_OBJ_ID));
                 evt.stopPropagation();
             },
 
